@@ -3,8 +3,37 @@ import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { useApp } from "./context";
 import { FARVER } from "./store";
 
+
+function SletbartLogItem({ item, farve, onSlet }: { item: any, farve: string, onSlet: () => void }) {
+  const [swiped, setSwiped] = useState(false);
+
+  return (
+    <View style={{ marginHorizontal: 12, marginBottom: 8 }}>
+      {swiped && (
+        <View style={styles.sletBaggrund}>
+          <TouchableOpacity onPress={onSlet} style={styles.sletKnap}>
+            <Text style={styles.sletTekst}>Slet</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <TouchableOpacity
+        style={[styles.logItem, { marginHorizontal: 0, marginBottom: 0, transform: [{ translateX: swiped ? -80 : 0 }] }]}
+        onLongPress={() => setSwiped(!swiped)}
+        activeOpacity={0.9}
+      >
+        <View style={[styles.logDot, { backgroundColor: farve }]} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.logTekst}>{item.tekst}</Text>
+          <Text style={styles.logTid}>{item.tid}</Text>
+        </View>
+        {!swiped && <Text style={{ fontSize: 10, color: '#ccc' }}>hold</Text>}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function Index() {
-  const { data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur } = useApp();
+  const { data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, sletLogItem } = useApp();
   const [tik, setTik] = useState(0);
   const [visFlaskeModal, setVisFlaskeModal] = useState(false);
   const [visBleModal, setVisBleModal] = useState(false);
@@ -131,26 +160,19 @@ export default function Index() {
       <Text style={styles.sektionLabel}>Seneste aktivitet — {navne[aktivtBarn]}</Text>
 
       {barn.log.length === 0 ? (
-        <View style={styles.logItem}>
-          <Text style={styles.logTom}>Ingen aktiviteter endnu</Text>
-        </View>
-      ) : (
-        barn.log.map(item => (
-          <View key={item.id} style={styles.logItem}>
-            <View style={[styles.logDot, {
-              backgroundColor:
-                item.type === 'amning' ? farver[item.barn] :
-                item.type === 'lur' ? '#7F77DD' :
-                item.type === 'flaske' ? '#378ADD' :
-                '#D85A30'
-            }]} />
-            <View>
-              <Text style={styles.logTekst}>{item.tekst}</Text>
-              <Text style={styles.logTid}>{item.tid}</Text>
-            </View>
-          </View>
-        ))
-      )}
+  <View style={styles.logItem}>
+    <Text style={styles.logTom}>Ingen aktiviteter endnu</Text>
+  </View>
+) : (
+  barn.log.map(item => (
+    <SletbartLogItem
+      key={item.id}
+      item={item}
+      farve={item.type === 'amning' ? farver[item.barn] : item.type === 'lur' ? '#7F77DD' : item.type === 'flaske' ? '#378ADD' : '#D85A30'}
+      onSlet={() => sletLogItem(aktivtBarn, item.id)}
+    />
+  ))
+)}
 
       {/* FLASKE MODAL */}
       <Modal visible={visFlaskeModal} transparent animationType="fade">
@@ -239,6 +261,9 @@ const styles = StyleSheet.create({
   logTekst: { fontSize: 13, color: '#1A1A1A' },
   logTid: { fontSize: 11, color: '#888', marginTop: 2 },
   logTom: { fontSize: 13, color: '#888', textAlign: 'center', padding: 8 },
+  sletBaggrund: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#D85A30', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  sletKnap: { width: 80, alignItems: 'center', justifyContent: 'center', height: '100%' },
+  sletTekst: { color: 'white', fontWeight: '600', fontSize: 13 },
   modalBag: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   modal: { backgroundColor: 'white', borderRadius: 16, padding: 20, width: 300 },
   modalTitel: { fontSize: 16, fontWeight: '500', color: '#1A1A1A', marginBottom: 16 },

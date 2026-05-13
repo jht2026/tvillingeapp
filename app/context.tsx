@@ -14,6 +14,7 @@ type AppContextType = {
   stopLur: (barn: 'a' | 'b') => void;
   ændreNavn: (barn: 'a' | 'b', navn: string) => void;
   ændreFarve: (barn: 'a' | 'b', farve: string) => void;
+  sletLogItem: (barn: 'a' | 'b', id: string) => void;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -117,6 +118,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     opdaterOgGem(medLog);
   }
+  function sletLogItem(barn: 'a' | 'b', id: string) {
+  const nyData = {
+    ...data,
+    børn: {
+      ...data.børn,
+      [barn]: {
+        ...data.børn[barn],
+        log: data.børn[barn].log.filter(item => item.id !== id),
+      }
+    }
+  };
+  opdaterOgGem(nyData);
+}
 
   function ændreNavn(barn: 'a' | 'b', navn: string) {
     opdaterOgGem({ ...data, navne: { ...data.navne, [barn]: navn } });
@@ -132,10 +146,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve }}>
+     <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve, sletLogItem }}>
       {children}
     </AppContext.Provider>
-  );
+  )
 }
 
 export function useApp() {

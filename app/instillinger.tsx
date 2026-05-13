@@ -5,16 +5,18 @@ import { FARVER } from "./store";
 
 export default function Indstillinger() {
   const { data, ændreNavn, ændreFarve } = useApp();
-  const [navnA, setNavnA] = useState(data.navne.a);
-  const [navnB, setNavnB] = useState(data.navne.b);
+  const [navnA, setNavnA] = useState('');
+  const [navnB, setNavnB] = useState('');
   const [gemt, setGemt] = useState(false);
 
-  function gem() {
-    if (navnA.trim()) ændreNavn('a', navnA.trim());
-    if (navnB.trim()) ændreNavn('b', navnB.trim());
-    setGemt(true);
-    setTimeout(() => setGemt(false), 2000);
-  }
+ function gem() {
+  if (navnA.trim()) ændreNavn('a', navnA.trim());
+  if (navnB.trim()) ændreNavn('b', navnB.trim());
+  setNavnA('');
+  setNavnB('');
+  setGemt(true);
+  setTimeout(() => setGemt(false), 2000);
+}
 
   return (
     <ScrollView style={styles.container}>
