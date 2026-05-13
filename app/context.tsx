@@ -1,5 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { db } from './firebase';
 import { AppData, LogItem, initialData } from './store';
 
 type AppContextType = {
@@ -16,67 +17,59 @@ type AppContextType = {
 };
 
 const AppContext = createContext<AppContextType | null>(null);
+const DOC_ID = 'familie';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(initialData);
   const [aktivtBarn, setAktivtBarn] = useState<'a' | 'b'>('a');
-  const [indlæst, setIndlæst] = useState(false);
+  const [klar, setKlar] = useState(false);
 
-  // Indlæs data når appen starter
-// Indlæs data når appen starter
+  // Lyt til ændringer i Firestore i realtid
   useEffect(() => {
-    async function indlæsData() {
-      try {
-        let gemt = null;
-        try {
-          gemt = await AsyncStorage.getItem('tvillingeapp-data');
-        } catch {
-          gemt = localStorage.getItem('tvillingeapp-data');
-        }
-        if (gemt) {
-          const parsed = JSON.parse(gemt);
-          if (parsed.børn.a.amningStart) parsed.børn.a.amningStart = new Date(parsed.børn.a.amningStart);
-          if (parsed.børn.b.amningStart) parsed.børn.b.amningStart = new Date(parsed.børn.b.amningStart);
-          if (parsed.børn.a.lurStart) parsed.børn.a.lurStart = new Date(parsed.børn.a.lurStart);
-          if (parsed.børn.b.lurStart) parsed.børn.b.lurStart = new Date(parsed.børn.b.lurStart);
-          setData(parsed);
-        }
-      } catch (e) {
-        console.log('Fejl ved indlæsning:', e);
+    const unsub = onSnapshot(doc(db, 'tvillingeapp', DOC_ID), (snap) => {
+      if (snap.exists()) {
+        const d = snap.data() as AppData;
+        if (d.børn.a.amningStart) d.børn.a.amningStart = new Date(d.børn.a.amningStart);
+        if (d.børn.b.amningStart) d.børn.b.amningStart = new Date(d.børn.b.amningStart);
+        if (d.børn.a.lurStart) d.børn.a.lurStart = new Date(d.børn.a.lurStart);
+        if (d.børn.b.lurStart) d.børn.b.lurStart = new Date(d.børn.b.lurStart);
+        setData(d);
       }
-      setIndlæst(true);
-    }
-    indlæsData();
+      setKlar(true);
+    });
+    return () => unsub();
   }, []);
 
-  // Gem data hver gang det ændres
-  useEffect(() => {
-    if (!indlæst) return;
-    async function gemData() {
-      try {
-        await AsyncStorage.setItem('tvillingeapp-data', JSON.stringify(data));
-      } catch {
-        localStorage.setItem('tvillingeapp-data', JSON.stringify(data));
-      }
+  // Gem data til Firestore
+  async function gemData(nyData: AppData) {
+    try {
+      await setDoc(doc(db, 'tvillingeapp', DOC_ID), JSON.parse(JSON.stringify(nyData)));
+    } catch (e) {
+      console.log('Fejl ved gemning:', e);
     }
-    gemData();
-  }, [data, indlæst]);
+  }
+
+  function opdaterOgGem(nyData: AppData) {
+    setData(nyData);
+    gemData(nyData);
+  }
 
   function tilføjLog(barn: 'a' | 'b', item: Omit<LogItem, 'id' | 'barn'>) {
-    setData(prev => ({
-      ...prev,
+    const nyData = {
+      ...data,
       børn: {
-        ...prev.børn,
+        ...data.børn,
         [barn]: {
-          ...prev.børn[barn],
-          log: [{ ...item, id: Date.now().toString(), barn }, ...prev.børn[barn].log],
+          ...data.børn[barn],
+          log: [{ ...item, id: Date.now().toString(), barn }, ...data.børn[barn].log],
         }
       }
-    }));
+    };
+    opdaterOgGem(nyData);
   }
 
   function startAmning(barn: 'a' | 'b') {
-    setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], amningStart: new Date() } } }));
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], amningStart: new Date() } } });
   }
 
   function stopAmning(barn: 'a' | 'b') {
@@ -85,12 +78,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const dur = Math.floor((Date.now() - start.getTime()) / 1000);
     const m = Math.floor(dur / 60), s = dur % 60;
     const tekst = m >= 60 ? `Amning — ${Math.floor(m/60)}t ${m%60}m` : m > 0 ? `Amning — ${m}m ${s}s` : `Amning — ${s}s`;
-    setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], amningStart: null } } }));
-    tilføjLog(barn, { type: 'amning', tekst, tid: nowStr() });
+    const nyData = { ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], amningStart: null } } };
+    setData(nyData);
+    const medLog = {
+      ...nyData,
+      børn: {
+        ...nyData.børn,
+        [barn]: {
+          ...nyData.børn[barn],
+          log: [{ type: 'amning' as const, tekst, tid: nowStr(), id: Date.now().toString(), barn }, ...nyData.børn[barn].log],
+        }
+      }
+    };
+    opdaterOgGem(medLog);
   }
 
   function startLur(barn: 'a' | 'b') {
-    setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], lurStart: new Date() } } }));
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], lurStart: new Date() } } });
   }
 
   function stopLur(barn: 'a' | 'b') {
@@ -100,16 +104,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const dur = Math.floor((slut.getTime() - start.getTime()) / 1000);
     const m = Math.floor(dur / 60), s = dur % 60;
     const tekst = m >= 60 ? `Lur — ${Math.floor(m/60)}t ${m%60}m` : m > 0 ? `Lur — ${m}m ${s}s` : `Lur — ${s}s`;
-    setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], lurStart: null } } }));
-    tilføjLog(barn, { type: 'lur', tekst, tid: nowStr(), lurStart: start.getTime(), lurSlut: slut.getTime() });
+    const nyData = { ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], lurStart: null } } };
+    const medLog = {
+      ...nyData,
+      børn: {
+        ...nyData.børn,
+        [barn]: {
+          ...nyData.børn[barn],
+          log: [{ type: 'lur' as const, tekst, tid: nowStr(), id: Date.now().toString(), barn, lurStart: start.getTime(), lurSlut: slut.getTime() }, ...nyData.børn[barn].log],
+        }
+      }
+    };
+    opdaterOgGem(medLog);
   }
 
   function ændreNavn(barn: 'a' | 'b', navn: string) {
-    setData(prev => ({ ...prev, navne: { ...prev.navne, [barn]: navn } }));
+    opdaterOgGem({ ...data, navne: { ...data.navne, [barn]: navn } });
   }
 
   function ændreFarve(barn: 'a' | 'b', farve: string) {
-    setData(prev => ({ ...prev, farver: { ...prev.farver, [barn]: farve } }));
+    opdaterOgGem({ ...data, farver: { ...data.farver, [barn]: farve } });
   }
 
   function nowStr() {
