@@ -26,7 +26,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Lyt til ændringer i Firestore i realtid
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'tvillingeapp', DOC_ID), (snap) => {
+    const unsub = onSnapshot(doc(db, 'familie', DOC_ID), (snap) => {
       if (snap.exists()) {
         const d = snap.data() as AppData;
         if (d.børn.a.amningStart) d.børn.a.amningStart = new Date(d.børn.a.amningStart);
@@ -43,7 +43,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Gem data til Firestore
   async function gemData(nyData: AppData) {
     try {
-      await setDoc(doc(db, 'tvillingeapp', DOC_ID), JSON.parse(JSON.stringify(nyData)));
+      await setDoc(doc(db, 'familie', DOC_ID), JSON.parse(JSON.stringify(nyData)));
     } catch (e) {
       console.log('Fejl ved gemning:', e);
     }
