@@ -10,6 +10,10 @@ const firebaseConfig = {
   appId: "1:48267119661:web:ddfbfb62d93457b3013ca4",
 };
 
+if (typeof window !== 'undefined') {
+  (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = false;
+}
+
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
