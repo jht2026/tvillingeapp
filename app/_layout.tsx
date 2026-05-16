@@ -5,9 +5,17 @@ export default function RootLayout() {
   return (
     <AppProvider>
       <Tabs screenOptions={{
-        tabBarActiveTintColor: '#534AB7',
-        tabBarInactiveTintColor: '#888',
-        tabBarStyle: { backgroundColor: 'white', borderTopColor: '#E0E0E0' },
+        tabBarActiveTintColor: '#2C1810',
+        tabBarInactiveTintColor: '#B5A090',
+        tabBarStyle: { 
+          backgroundColor: '#FDF8F3', 
+          borderTopColor: '#EDE5DC',
+          borderTopWidth: 0.5,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          letterSpacing: 0.3,
+        },
         headerShown: false,
       }}>
         <Tabs.Screen name="index" options={{ title: 'Log' }} />
@@ -16,6 +24,7 @@ export default function RootLayout() {
         <Tabs.Screen name="indstillinger" options={{ title: '⚙️' }} />
         <Tabs.Screen name="store" options={{ href: null }} />
         <Tabs.Screen name="context" options={{ href: null }} />
+        <Tabs.Screen name="firebase" options={{ href: null }} />
       </Tabs>
     </AppProvider>
   );
