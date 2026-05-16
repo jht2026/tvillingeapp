@@ -1,18 +1,11 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useApp } from "./context";
-import { FARVER, TEMA } from "./store";
+import { TEMA } from "./store";
 
 export default function Idag() {
   const { data } = useApp();
   const navne = data.navne;
   const farver = data.farver;
-
-  function getBagfarve(barn: 'a' | 'b') {
-    return FARVER.find(f => f.hex === farver[barn])?.bg || '#F5EDE5';
-  }
-  function getTekstfarve(barn: 'a' | 'b') {
-    return FARVER.find(f => f.hex === farver[barn])?.tekst || '#2C1810';
-  }
 
   function fmtMins(m: number) {
     if (m >= 60) return Math.floor(m / 60) + 't ' + (m % 60) + 'm';
@@ -82,14 +75,16 @@ export default function Idag() {
         {(['a', 'b'] as const).map(barn => {
           const s = barn === 'a' ? statsA : statsB;
           return (
-            <View key={barn} style={styles.kolonne}>
-              <View style={[styles.barnHeader, { backgroundColor: barn === 'a' ? '#2C1810' : '#EDE5DC' }]}>
-                <Text style={[styles.barnHeaderTekst, { color: barn === 'a' ? 'white' : '#2C1810' }]}>{navne[barn]}</Text>
+            <View key={barn} style={styles.dagKort}>
+              <View style={[styles.dagKortHeader, { backgroundColor: barn === 'a' ? '#2C1810' : '#EDE5DC' }]}>
+                <Text style={[styles.dagKortHeaderTekst, { color: barn === 'a' ? 'white' : '#2C1810' }]}>{navne[barn]}</Text>
               </View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Amninger</Text><Text style={[styles.statVal, { color: farver[barn] }]}>{s.amninger}</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Flaske</Text><Text style={[styles.statVal, { color: '#7B9EB8' }]}>{s.flaskeTotal} ml</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Lure</Text><Text style={[styles.statVal, { color: '#9B8BB0' }]}>{s.lurAntal}</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Bleskift</Text><Text style={[styles.statVal, { color: '#C4848A' }]}>{s.bleTotal}</Text></View>
+              <View style={styles.dagKortBody}>
+                <View style={styles.dagStatRad}><Text style={styles.statLbl}>Amninger</Text><Text style={[styles.statVal, { color: farver[barn] }]}>{s.amninger}</Text></View>
+                <View style={styles.dagStatRad}><Text style={styles.statLbl}>Flaske</Text><Text style={[styles.statVal, { color: '#7B9EB8' }]}>{s.flaskeTotal} ml</Text></View>
+                <View style={styles.dagStatRad}><Text style={styles.statLbl}>Lure</Text><Text style={[styles.statVal, { color: '#9B8BB0' }]}>{s.lurAntal}</Text></View>
+                <View style={styles.dagStatRad}><Text style={styles.statLbl}>Bleskift</Text><Text style={[styles.statVal, { color: '#C4848A' }]}>{s.bleTotal}</Text></View>
+              </View>
             </View>
           );
         })}
@@ -182,11 +177,12 @@ const styles = StyleSheet.create({
   titel: { fontSize: 24, fontWeight: '500', color: TEMA.tekstPrimær, letterSpacing: -0.3 },
   sektionLabel: { fontSize: 10, color: TEMA.tekstSekundær, textTransform: 'uppercase', letterSpacing: 0.6, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
   toKolonner: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-  kolonne: { flex: 1 },
-  barnHeader: { padding: 10, borderRadius: 14, marginBottom: 6, alignItems: 'center' },
-  barnHeaderTekst: { fontSize: 13, fontWeight: '500' },
-  statBlok: { backgroundColor: TEMA.kort, borderRadius: 12, borderWidth: 0.5, borderColor: TEMA.border, padding: 9, marginBottom: 6 },
-  statLbl: { fontSize: 10, color: TEMA.tekstSekundær, marginBottom: 2 },
+  dagKort: { flex: 1, backgroundColor: TEMA.kort, borderRadius: 16, borderWidth: 0.5, borderColor: TEMA.border, overflow: 'hidden', marginBottom: 8 },
+  dagKortHeader: { padding: 12, alignItems: 'center' },
+  dagKortHeaderTekst: { fontSize: 13, fontWeight: '500' },
+  dagKortBody: { padding: 12 },
+  dagStatRad: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: TEMA.borderLight },
+  statLbl: { fontSize: 10, color: TEMA.tekstSekundær },
   statVal: { fontSize: 15, fontWeight: '500' },
   kortFull: { backgroundColor: TEMA.kort, borderRadius: 16, borderWidth: 0.5, borderColor: TEMA.border, padding: 12, marginBottom: 8 },
   kortHeader: { fontSize: 11, fontWeight: '500', marginBottom: 8 },
