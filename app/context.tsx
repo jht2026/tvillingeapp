@@ -30,6 +30,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const unsub = onSnapshot(doc(db, 'familie', DOC_ID), (snap) => {
       if (snap.exists()) {
         const d = snap.data() as AppData;
+        d.farver.a = '#2C1810';
+        d.farver.b = '#8B5E3C';
         if (d.børn.a.amningStart) d.børn.a.amningStart = new Date(d.børn.a.amningStart);
         if (d.børn.b.amningStart) d.børn.b.amningStart = new Date(d.børn.b.amningStart);
         if (d.børn.a.lurStart) d.børn.a.lurStart = new Date(d.børn.a.lurStart);

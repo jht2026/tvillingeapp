@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useApp } from "./context";
-import { FARVER, TEMA } from "./store";
+import { TEMA } from "./store";
 
 function SletbartLogItem({ item, farve, onSlet }: { item: any, farve: string, onSlet: () => void }) {
   const [swiped, setSwiped] = useState(false);
@@ -91,8 +91,8 @@ export default function Index() {
   const barn = data.børn[aktivtBarn];
   const amningKører = barn.amningStart !== null;
   const lurKører = barn.lurStart !== null;
-  const farveBagA = FARVER.find(f => f.hex === farver.a)?.bg || '#F5EDE5';
-  const farveBagB = FARVER.find(f => f.hex === farver.b)?.bg || '#EAF0F5';
+  const farveBagA = '#2C1810';
+  const farveBagB = '#EDE5DC';
 
   const sidstMadA = data.børn.a.log.find(i => i.type === 'amning' || i.type === 'flaske');
   const sidstMadB = data.børn.b.log.find(i => i.type === 'amning' || i.type === 'flaske');
@@ -106,19 +106,19 @@ export default function Index() {
 
       <View style={styles.barnVælger}>
         <TouchableOpacity
-          style={[styles.barnKnap, aktivtBarn === 'a' && { backgroundColor: farveBagA, borderColor: farver.a }]}
+          style={[styles.barnKnap, aktivtBarn === 'a' && { backgroundColor: farveBagA, borderColor: farveBagA }]}
           onPress={() => setAktivtBarn('a')}
         >
-          <Text style={[styles.barnKnapNavn, { color: TEMA.tekstPrimær }]}>{navne.a}</Text>
-          <Text style={styles.barnKnapTid}>{sidstMadA ? 'Ammet ' + sidstMadA.tid : 'Intet logget'}</Text>
-        </TouchableOpacity>
+          <Text style={[styles.barnKnapNavn, { color: aktivtBarn === 'a' ? 'white' : TEMA.tekstPrimær }]}>{navne.a}</Text>
+          <Text style={[styles.barnKnapTid, { color: aktivtBarn === 'a' ? 'rgba(255,255,255,0.6)' : TEMA.tekstSekundær }]}>{sidstMadA ? 'Ammet ' + sidstMadA.tid : 'Intet logget'}</Text>
+          </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.barnKnap, aktivtBarn === 'b' && { backgroundColor: farveBagB, borderColor: farver.b }]}
-          onPress={() => setAktivtBarn('b')}
+         style={[styles.barnKnap, aktivtBarn === 'b' && { backgroundColor: farveBagB, borderColor: farveBagB }]}
+         onPress={() => setAktivtBarn('b')}
         >
-          <Text style={[styles.barnKnapNavn, { color: TEMA.tekstPrimær }]}>{navne.b}</Text>
-          <Text style={styles.barnKnapTid}>{sidstMadB ? 'Ammet ' + sidstMadB.tid : 'Intet logget'}</Text>
-        </TouchableOpacity>
+          <Text style={[styles.barnKnapNavn, { color: aktivtBarn === 'b' ? '#2C1810' : TEMA.tekstPrimær }]}>{navne.b}</Text>
+          <Text style={[styles.barnKnapTid, { color: aktivtBarn === 'b' ? 'rgba(44,24,16,0.5)' : TEMA.tekstSekundær }]}>{sidstMadB ? 'Ammet ' + sidstMadB.tid : 'Intet logget'}</Text>
+          </TouchableOpacity>
       </View>
 
       <Text style={styles.sektionLabel}>Registrer</Text>
