@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useApp } from "./context";
-import { FARVER } from "./store";
+import { FARVER, TEMA } from "./store";
 
 export default function Idag() {
   const { data } = useApp();
@@ -8,10 +8,15 @@ export default function Idag() {
   const farver = data.farver;
 
   function getBagfarve(barn: 'a' | 'b') {
-    return FARVER.find(f => f.hex === farver[barn])?.bg || '#E1F5EE';
+    return FARVER.find(f => f.hex === farver[barn])?.bg || '#F5EDE5';
   }
   function getTekstfarve(barn: 'a' | 'b') {
-    return FARVER.find(f => f.hex === farver[barn])?.tekst || '#085041';
+    return FARVER.find(f => f.hex === farver[barn])?.tekst || '#2C1810';
+  }
+
+  function fmtMins(m: number) {
+    if (m >= 60) return Math.floor(m / 60) + 't ' + (m % 60) + 'm';
+    return m + 'm';
   }
 
   function getStats(barn: 'a' | 'b') {
@@ -35,17 +40,11 @@ export default function Idag() {
     return { amninger, flaskeTotal, flaskeAntal, lurAntal, lurTotalMins, lure, bleVaad, bleBeskidt, bleBegge, bleTotal, sidstMad };
   }
 
-  function fmtMins(m: number) {
-    if (m >= 60) return Math.floor(m / 60) + 't ' + (m % 60) + 'm';
-    return m + 'm';
-  }
-
   function renderTidslinje(barn: 'a' | 'b') {
     const lure = data.børn[barn].log.filter(i => i.type === 'lur' && i.lurStart && i.lurSlut);
     const dagStart = new Date();
     dagStart.setHours(0, 0, 0, 0);
     const dagMins = 24 * 60;
-
     return (
       <View>
         <View style={styles.tlHours}>
@@ -60,14 +59,7 @@ export default function Idag() {
             const left = `${Math.max((startMins / dagMins) * 100, 0)}%` as any;
             const width = `${Math.max((durMins / dagMins) * 100, 0.5)}%` as any;
             return (
-              <View
-                key={lur.id}
-                style={[styles.tlSegment, {
-                  left: left + '%',
-                  width: width + '%',
-                  backgroundColor: farver[barn],
-                }]}
-              />
+              <View key={lur.id} style={[styles.tlSegment, { left, width, backgroundColor: farver[barn] }]} />
             );
           })}
         </View>
@@ -81,6 +73,7 @@ export default function Idag() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.topbar}>
+        <Text style={styles.eyebrow}>{new Date().toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         <Text style={styles.titel}>I dag</Text>
       </View>
 
@@ -90,13 +83,13 @@ export default function Idag() {
           const s = barn === 'a' ? statsA : statsB;
           return (
             <View key={barn} style={styles.kolonne}>
-              <View style={[styles.barnHeader, { backgroundColor: getBagfarve(barn) }]}>
-                <Text style={[styles.barnHeaderTekst, { color: getTekstfarve(barn) }]}>{navne[barn]}</Text>
+              <View style={[styles.barnHeader, { backgroundColor: barn === 'a' ? '#2C1810' : '#EDE5DC' }]}>
+                <Text style={[styles.barnHeaderTekst, { color: barn === 'a' ? 'white' : '#2C1810' }]}>{navne[barn]}</Text>
               </View>
               <View style={styles.statBlok}><Text style={styles.statLbl}>Amninger</Text><Text style={[styles.statVal, { color: farver[barn] }]}>{s.amninger}</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Flaske total</Text><Text style={[styles.statVal, { color: '#378ADD' }]}>{s.flaskeTotal} ml</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Lure</Text><Text style={[styles.statVal, { color: '#7F77DD' }]}>{s.lurAntal}</Text></View>
-              <View style={styles.statBlok}><Text style={styles.statLbl}>Bleskift</Text><Text style={[styles.statVal, { color: '#D85A30' }]}>{s.bleTotal}</Text></View>
+              <View style={styles.statBlok}><Text style={styles.statLbl}>Flaske</Text><Text style={[styles.statVal, { color: '#7B9EB8' }]}>{s.flaskeTotal} ml</Text></View>
+              <View style={styles.statBlok}><Text style={styles.statLbl}>Lure</Text><Text style={[styles.statVal, { color: '#9B8BB0' }]}>{s.lurAntal}</Text></View>
+              <View style={styles.statBlok}><Text style={styles.statLbl}>Bleskift</Text><Text style={[styles.statVal, { color: '#C4848A' }]}>{s.bleTotal}</Text></View>
             </View>
           );
         })}
@@ -123,7 +116,7 @@ export default function Idag() {
       {(['a', 'b'] as const).map(barn => {
         const s = barn === 'a' ? statsA : statsB;
         return (
-          <View key={barn} style={[styles.kortFull, { marginHorizontal: 12, marginBottom: 8 }]}>
+          <View key={barn} style={[styles.kortFull, { marginHorizontal: 16, marginBottom: 8 }]}>
             <Text style={[styles.kortHeader, { color: farver[barn] }]}>{navne[barn]}</Text>
             {renderTidslinje(barn)}
             <View style={[styles.miniRad, { marginTop: 8 }]}>
@@ -156,9 +149,9 @@ export default function Idag() {
             <View key={barn} style={[styles.kortFull, { flex: 1 }]}>
               <Text style={[styles.kortHeader, { color: farver[barn] }]}>{navne[barn]}</Text>
               <View style={styles.miniRad}>
-                <View style={[styles.bleBlok, { backgroundColor: '#FFF5F0' }]}><Text style={[styles.bleVal, { color: '#D35400' }]}>{s.bleVaad}</Text><Text style={styles.miniLbl}>💧 Våde</Text></View>
-                <View style={[styles.bleBlok, { backgroundColor: '#FDF0ED' }]}><Text style={[styles.bleVal, { color: '#A33010' }]}>{s.bleBeskidt}</Text><Text style={styles.miniLbl}>💩 Beskidte</Text></View>
-                <View style={[styles.bleBlok, { backgroundColor: '#FDE8E0' }]}><Text style={[styles.bleVal, { color: '#7A2010' }]}>{s.bleBegge}</Text><Text style={styles.miniLbl}>Begge</Text></View>
+                <View style={[styles.bleBlok, { backgroundColor: '#FAF0E8' }]}><Text style={[styles.bleVal, { color: '#8B5E3C' }]}>{s.bleVaad}</Text><Text style={styles.miniLbl}>💧 Våde</Text></View>
+                <View style={[styles.bleBlok, { backgroundColor: '#F7ECEC' }]}><Text style={[styles.bleVal, { color: '#6B2830' }]}>{s.bleBeskidt}</Text><Text style={styles.miniLbl}>💩 Beskidte</Text></View>
+                <View style={[styles.bleBlok, { backgroundColor: '#F5F0EB' }]}><Text style={[styles.bleVal, { color: '#5C4535' }]}>{s.bleBegge}</Text><Text style={styles.miniLbl}>Begge</Text></View>
               </View>
             </View>
           );
@@ -178,38 +171,38 @@ export default function Idag() {
           );
         })}
       </View>
-
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  topbar: { backgroundColor: 'white', padding: 16, paddingTop: 60, borderBottomWidth: 0.5, borderBottomColor: '#E0E0E0' },
-  titel: { fontSize: 20, fontWeight: '600', color: '#1A1A1A' },
-  sektionLabel: { fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.5, marginHorizontal: 12, marginTop: 14, marginBottom: 6 },
-  toKolonner: { flexDirection: 'row', gap: 8, paddingHorizontal: 12 },
+  container: { flex: 1, backgroundColor: TEMA.baggrund },
+  topbar: { backgroundColor: TEMA.baggrund, padding: 16, paddingTop: 60, paddingBottom: 12 },
+  eyebrow: { fontSize: 11, color: TEMA.tekstSekundær, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
+  titel: { fontSize: 24, fontWeight: '500', color: TEMA.tekstPrimær, letterSpacing: -0.3 },
+  sektionLabel: { fontSize: 10, color: TEMA.tekstSekundær, textTransform: 'uppercase', letterSpacing: 0.6, marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
+  toKolonner: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
   kolonne: { flex: 1 },
-  barnHeader: { padding: 8, borderRadius: 10, marginBottom: 6, alignItems: 'center' },
+  barnHeader: { padding: 10, borderRadius: 14, marginBottom: 6, alignItems: 'center' },
   barnHeaderTekst: { fontSize: 13, fontWeight: '500' },
-  statBlok: { backgroundColor: 'white', borderRadius: 10, borderWidth: 0.5, borderColor: '#E0E0E0', padding: 9, marginBottom: 6 },
-  statLbl: { fontSize: 10, color: '#888', marginBottom: 2 },
+  statBlok: { backgroundColor: TEMA.kort, borderRadius: 12, borderWidth: 0.5, borderColor: TEMA.border, padding: 9, marginBottom: 6 },
+  statLbl: { fontSize: 10, color: TEMA.tekstSekundær, marginBottom: 2 },
   statVal: { fontSize: 15, fontWeight: '500' },
-  kortFull: { backgroundColor: 'white', borderRadius: 12, borderWidth: 0.5, borderColor: '#E0E0E0', padding: 12, marginBottom: 8 },
+  kortFull: { backgroundColor: TEMA.kort, borderRadius: 16, borderWidth: 0.5, borderColor: TEMA.border, padding: 12, marginBottom: 8 },
   kortHeader: { fontSize: 11, fontWeight: '500', marginBottom: 8 },
   miniRad: { flexDirection: 'row', gap: 4 },
-  miniBlok: { flex: 1, backgroundColor: '#F5F5F5', borderRadius: 8, padding: 6, alignItems: 'center' },
-  miniVal: { fontSize: 13, fontWeight: '500', color: '#1A1A1A' },
-  miniLbl: { fontSize: 9, color: '#888', marginTop: 2 },
-  bleBlok: { flex: 1, borderRadius: 8, padding: 6, alignItems: 'center' },
+  miniBlok: { flex: 1, backgroundColor: TEMA.baggrund, borderRadius: 10, padding: 6, alignItems: 'center' },
+  miniVal: { fontSize: 13, fontWeight: '500', color: TEMA.tekstPrimær },
+  miniLbl: { fontSize: 9, color: TEMA.tekstSekundær, marginTop: 2 },
+  bleBlok: { flex: 1, borderRadius: 10, padding: 6, alignItems: 'center' },
   bleVal: { fontSize: 14, fontWeight: '500' },
-  sidstVal: { fontSize: 13, color: '#1A1A1A', marginTop: 4 },
-  sidstTid: { fontSize: 11, color: '#888', marginTop: 2 },
+  sidstVal: { fontSize: 13, color: TEMA.tekstPrimær, marginTop: 4 },
+  sidstTid: { fontSize: 11, color: TEMA.tekstSekundær, marginTop: 2 },
   tlHours: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  tlHour: { fontSize: 9, color: '#888' },
-  tlBar: { height: 22, backgroundColor: '#F0F0F0', borderRadius: 5, overflow: 'hidden', marginBottom: 8, position: 'relative' },
-  tlSegment: { position: 'absolute', top: 0, height: '100%', borderRadius: 2 },
-  lurRad: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 0.5, borderTopColor: '#F0F0F0' },
-  lurTid: { fontSize: 12, color: '#888' },
+  tlHour: { fontSize: 9, color: TEMA.tekstSekundær },
+  tlBar: { height: 20, backgroundColor: TEMA.baggrund, borderRadius: 5, overflow: 'hidden', marginBottom: 8, position: 'relative' },
+  tlSegment: { position: 'absolute', top: 0, height: '100%', borderRadius: 3 },
+  lurRad: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 0.5, borderTopColor: TEMA.borderLight },
+  lurTid: { fontSize: 12, color: TEMA.tekstSekundær },
   lurVarighed: { fontSize: 12, fontWeight: '500' },
 });

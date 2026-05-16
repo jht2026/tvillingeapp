@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useApp } from "./context";
-import { FARVER } from "./store";
-
+import { FARVER, TEMA } from "./store";
 
 function SletbartLogItem({ item, farve, onSlet }: { item: any, farve: string, onSlet: () => void }) {
   const [swiped, setSwiped] = useState(false);
-
   return (
-    <View style={{ marginHorizontal: 12, marginBottom: 8 }}>
+    <View style={{ marginBottom: 6 }}>
       {swiped && (
         <View style={styles.sletBaggrund}>
           <TouchableOpacity onPress={onSlet} style={styles.sletKnap}>
@@ -17,7 +15,7 @@ function SletbartLogItem({ item, farve, onSlet }: { item: any, farve: string, on
         </View>
       )}
       <TouchableOpacity
-        style={[styles.logItem, { marginHorizontal: 0, marginBottom: 0, transform: [{ translateX: swiped ? -80 : 0 }] }]}
+        style={[styles.logItem, { transform: [{ translateX: swiped ? -80 : 0 }] }]}
         onLongPress={() => setSwiped(!swiped)}
         activeOpacity={0.9}
       >
@@ -26,7 +24,7 @@ function SletbartLogItem({ item, farve, onSlet }: { item: any, farve: string, on
           <Text style={styles.logTekst}>{item.tekst}</Text>
           <Text style={styles.logTid}>{item.tid}</Text>
         </View>
-        {!swiped && <Text style={{ fontSize: 10, color: '#ccc' }}>hold</Text>}
+        {!swiped && <Text style={{ fontSize: 9, color: '#DDD' }}>hold</Text>}
       </TouchableOpacity>
     </View>
   );
@@ -93,12 +91,16 @@ export default function Index() {
   const barn = data.børn[aktivtBarn];
   const amningKører = barn.amningStart !== null;
   const lurKører = barn.lurStart !== null;
-  const farveBagA = FARVER.find(f => f.hex === farver.a)?.bg || '#E1F5EE';
-  const farveBagB = FARVER.find(f => f.hex === farver.b)?.bg || '#E6F1FB';
+  const farveBagA = FARVER.find(f => f.hex === farver.a)?.bg || '#F5EDE5';
+  const farveBagB = FARVER.find(f => f.hex === farver.b)?.bg || '#EAF0F5';
+
+  const sidstMadA = data.børn.a.log.find(i => i.type === 'amning' || i.type === 'flaske');
+  const sidstMadB = data.børn.b.log.find(i => i.type === 'amning' || i.type === 'flaske');
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.topbar}>
+        <Text style={styles.eyebrow}>{new Date().toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         <Text style={styles.titel}>Tvillingetracker</Text>
       </View>
 
@@ -107,72 +109,60 @@ export default function Index() {
           style={[styles.barnKnap, aktivtBarn === 'a' && { backgroundColor: farveBagA, borderColor: farver.a }]}
           onPress={() => setAktivtBarn('a')}
         >
-          <Text style={styles.barnKnapTekst}>{navne.a}</Text>
+          <Text style={[styles.barnKnapNavn, { color: TEMA.tekstPrimær }]}>{navne.a}</Text>
+          <Text style={styles.barnKnapTid}>{sidstMadA ? 'Ammet ' + sidstMadA.tid : 'Intet logget'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.barnKnap, aktivtBarn === 'b' && { backgroundColor: farveBagB, borderColor: farver.b }]}
           onPress={() => setAktivtBarn('b')}
         >
-          <Text style={styles.barnKnapTekst}>{navne.b}</Text>
+          <Text style={[styles.barnKnapNavn, { color: TEMA.tekstPrimær }]}>{navne.b}</Text>
+          <Text style={styles.barnKnapTid}>{sidstMadB ? 'Ammet ' + sidstMadB.tid : 'Intet logget'}</Text>
         </TouchableOpacity>
       </View>
 
       <Text style={styles.sektionLabel}>Registrer</Text>
-
-      <View style={styles.knapGrid}>
+      <View style={styles.aktionRække}>
         <TouchableOpacity
-          style={[styles.kort, { borderLeftColor: farver.a }, amningKører && { backgroundColor: farveBagA }]}
+          style={[styles.aktionKnap, amningKører && { backgroundColor: farveBagA }]}
           onPress={toggleAmning}
         >
-          <Text style={styles.kortIkon}>🤱</Text>
-          <Text style={styles.kortTitel}>{amningKører ? 'Stop amning' : 'Start amning'}</Text>
-          <Text style={styles.kortSub}>{amningKører ? timerTekst(barn.amningStart) : 'Tryk for at starte'}</Text>
+          <Text style={styles.aktionIkon}>🤱</Text>
+          <Text style={styles.aktionLbl}>{amningKører ? timerTekst(barn.amningStart) : 'Amning'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.kort, styles.kortFlaske]}
-          onPress={() => setVisFlaskeModal(true)}
-        >
-          <Text style={styles.kortIkon}>🍼</Text>
-          <Text style={styles.kortTitel}>Flaske</Text>
-          <Text style={styles.kortSub}>Tryk for at logge ml</Text>
+        <TouchableOpacity style={styles.aktionKnap} onPress={() => setVisFlaskeModal(true)}>
+          <Text style={styles.aktionIkon}>🍼</Text>
+          <Text style={styles.aktionLbl}>Flaske</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
-          style={[styles.kort, styles.kortLur, lurKører && styles.kortLurAktiv]}
+          style={[styles.aktionKnap, lurKører && { backgroundColor: '#F2EEF7' }]}
           onPress={toggleLur}
         >
-          <Text style={styles.kortIkon}>😴</Text>
-          <Text style={styles.kortTitel}>{lurKører ? 'Stop lur' : 'Start lur'}</Text>
-          <Text style={styles.kortSub}>{lurKører ? timerTekst(barn.lurStart) : 'Tryk for at starte'}</Text>
+          <Text style={styles.aktionIkon}>😴</Text>
+          <Text style={styles.aktionLbl}>{lurKører ? timerTekst(barn.lurStart) : 'Lur'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.kort, styles.kortBle]}
-          onPress={() => setVisBleModal(true)}
-        >
-          <Text style={styles.kortIkon}>👶</Text>
-          <Text style={styles.kortTitel}>Bleskift</Text>
-          <Text style={styles.kortSub}>Våd / beskidt</Text>
+        <TouchableOpacity style={styles.aktionKnap} onPress={() => setVisBleModal(true)}>
+          <Text style={styles.aktionIkon}>👶</Text>
+          <Text style={styles.aktionLbl}>Ble</Text>
         </TouchableOpacity>
       </View>
 
       <Text style={styles.sektionLabel}>Seneste aktivitet — {navne[aktivtBarn]}</Text>
 
-      {barn.log.length === 0 ? (
-  <View style={styles.logItem}>
-    <Text style={styles.logTom}>Ingen aktiviteter endnu</Text>
-  </View>
-) : (
-  barn.log.map(item => (
-    <SletbartLogItem
-      key={item.id}
-      item={item}
-      farve={item.type === 'amning' ? farver[item.barn] : item.type === 'lur' ? '#7F77DD' : item.type === 'flaske' ? '#378ADD' : '#D85A30'}
-      onSlet={() => sletLogItem(aktivtBarn, item.id)}
-    />
-  ))
-)}
+      <View style={styles.logWrap}>
+        {barn.log.length === 0 ? (
+          <Text style={styles.logTom}>Ingen aktiviteter endnu</Text>
+        ) : (
+          barn.log.map(item => (
+            <SletbartLogItem
+              key={item.id}
+              item={item}
+              farve={item.type === 'amning' ? farver[item.barn] : item.type === 'lur' ? '#9B8BB0' : item.type === 'flaske' ? '#7B9EB8' : '#C4848A'}
+              onSlet={() => sletLogItem(aktivtBarn, item.id)}
+            />
+          ))
+        )}
+      </View>
 
       {/* FLASKE MODAL */}
       <Modal visible={visFlaskeModal} transparent animationType="fade">
@@ -182,6 +172,7 @@ export default function Index() {
             <TextInput
               style={styles.input}
               placeholder="Antal ml, fx 80"
+              placeholderTextColor={TEMA.tekstSekundær}
               keyboardType="numeric"
               value={mlInput}
               onChangeText={setMlInput}
@@ -204,22 +195,13 @@ export default function Index() {
           <View style={styles.modal}>
             <Text style={styles.modalTitel}>Bleskift — {navne[aktivtBarn]}</Text>
             <View style={styles.bleKnapper}>
-              <TouchableOpacity
-                style={[styles.bleKnap, valgtBle === 'vaad' && styles.bleKnapAktiv]}
-                onPress={() => setValgtBle('vaad')}
-              >
+              <TouchableOpacity style={[styles.bleKnap, valgtBle === 'vaad' && styles.bleKnapAktiv]} onPress={() => setValgtBle('vaad')}>
                 <Text style={styles.bleKnapTekst}>💧 Våd</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.bleKnap, valgtBle === 'beskidt' && styles.bleKnapAktiv]}
-                onPress={() => setValgtBle('beskidt')}
-              >
+              <TouchableOpacity style={[styles.bleKnap, valgtBle === 'beskidt' && styles.bleKnapAktiv]} onPress={() => setValgtBle('beskidt')}>
                 <Text style={styles.bleKnapTekst}>💩 Beskidt</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.bleKnap, valgtBle === 'begge' && styles.bleKnapAktiv]}
-                onPress={() => setValgtBle('begge')}
-              >
+              <TouchableOpacity style={[styles.bleKnap, valgtBle === 'begge' && styles.bleKnapAktiv]} onPress={() => setValgtBle('begge')}>
                 <Text style={styles.bleKnapTekst}>Begge</Text>
               </TouchableOpacity>
             </View>
@@ -234,47 +216,44 @@ export default function Index() {
           </View>
         </View>
       </Modal>
-
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  topbar: { backgroundColor: 'white', padding: 16, paddingTop: 60, borderBottomWidth: 0.5, borderBottomColor: '#E0E0E0' },
-  titel: { fontSize: 20, fontWeight: '600', color: '#1A1A1A' },
-  barnVælger: { flexDirection: 'row', gap: 8, padding: 12 },
-  barnKnap: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 0.5, borderColor: '#E0E0E0', backgroundColor: 'white', alignItems: 'center' },
-  barnKnapTekst: { fontSize: 13, fontWeight: '500' },
-  sektionLabel: { fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.5, marginHorizontal: 12, marginTop: 8, marginBottom: 6 },
-  knapGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 12 },
-  kort: { width: '47%', backgroundColor: 'white', borderRadius: 12, borderWidth: 0.5, borderColor: '#E0E0E0', padding: 14, borderLeftWidth: 3 },
-  kortFlaske: { borderLeftColor: '#378ADD' },
-  kortLur: { borderLeftColor: '#7F77DD' },
-  kortBle: { borderLeftColor: '#D85A30' },
-  kortLurAktiv: { backgroundColor: '#EEEDFE', borderColor: '#AFA9EC' },
-  kortIkon: { fontSize: 22, marginBottom: 6 },
-  kortTitel: { fontSize: 13, fontWeight: '500', color: '#1A1A1A', marginBottom: 2 },
-  kortSub: { fontSize: 11, color: '#888' },
-  logItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 12, marginBottom: 8, backgroundColor: 'white', borderRadius: 10, padding: 12, borderWidth: 0.5, borderColor: '#E0E0E0' },
-  logDot: { width: 8, height: 8, borderRadius: 4 },
-  logTekst: { fontSize: 13, color: '#1A1A1A' },
-  logTid: { fontSize: 11, color: '#888', marginTop: 2 },
-  logTom: { fontSize: 13, color: '#888', textAlign: 'center', padding: 8 },
-  sletBaggrund: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#D85A30', borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: TEMA.baggrund },
+  topbar: { backgroundColor: TEMA.baggrund, padding: 16, paddingTop: 60, paddingBottom: 12 },
+  eyebrow: { fontSize: 11, color: TEMA.tekstSekundær, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4 },
+  titel: { fontSize: 24, fontWeight: '500', color: TEMA.tekstPrimær, letterSpacing: -0.3 },
+  barnVælger: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 },
+  barnKnap: { flex: 1, padding: 14, borderRadius: 18, borderWidth: 0.5, borderColor: TEMA.border, backgroundColor: TEMA.kort },
+  barnKnapNavn: { fontSize: 14, fontWeight: '500', color: TEMA.tekstPrimær },
+  barnKnapTid: { fontSize: 11, color: TEMA.tekstSekundær, marginTop: 3 },
+  sektionLabel: { fontSize: 10, color: TEMA.tekstSekundær, textTransform: 'uppercase', letterSpacing: 0.6, marginHorizontal: 16, marginBottom: 8 },
+  aktionRække: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 20 },
+  aktionKnap: { flex: 1, backgroundColor: TEMA.kort, borderRadius: 14, borderWidth: 0.5, borderColor: TEMA.border, padding: 12, alignItems: 'center' },
+  aktionIkon: { fontSize: 20 },
+  aktionLbl: { fontSize: 10, color: TEMA.tekstSekundær, marginTop: 5 },
+  logWrap: { paddingHorizontal: 16, paddingBottom: 30 },
+  logItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: TEMA.kort, borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: TEMA.border },
+  logDot: { width: 6, height: 6, borderRadius: 3 },
+  logTekst: { fontSize: 13, color: TEMA.tekstPrimær },
+  logTid: { fontSize: 11, color: TEMA.tekstSekundær, marginTop: 2 },
+  logTom: { fontSize: 13, color: TEMA.tekstSekundær, textAlign: 'center', padding: 20 },
+  sletBaggrund: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, backgroundColor: '#C4848A', borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   sletKnap: { width: 80, alignItems: 'center', justifyContent: 'center', height: '100%' },
   sletTekst: { color: 'white', fontWeight: '600', fontSize: 13 },
-  modalBag: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  modal: { backgroundColor: 'white', borderRadius: 16, padding: 20, width: 300 },
-  modalTitel: { fontSize: 16, fontWeight: '500', color: '#1A1A1A', marginBottom: 16 },
-  input: { borderWidth: 0.5, borderColor: '#E0E0E0', borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 12 },
+  modalBag: { flex: 1, backgroundColor: 'rgba(44,24,16,0.3)', justifyContent: 'center', alignItems: 'center' },
+  modal: { backgroundColor: TEMA.kort, borderRadius: 20, padding: 20, width: 300, borderWidth: 0.5, borderColor: TEMA.border },
+  modalTitel: { fontSize: 16, fontWeight: '500', color: TEMA.tekstPrimær, marginBottom: 16 },
+  input: { borderWidth: 0.5, borderColor: TEMA.border, borderRadius: 12, padding: 12, fontSize: 16, color: TEMA.tekstPrimær, backgroundColor: TEMA.baggrund, marginBottom: 12 },
   modalKnapper: { flexDirection: 'row', gap: 8 },
-  modalAnnuller: { flex: 1, padding: 10, borderRadius: 10, borderWidth: 0.5, borderColor: '#E0E0E0', alignItems: 'center' },
-  modalAnnullerTekst: { fontSize: 13, color: '#1A1A1A' },
-  modalGem: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#534AB7', alignItems: 'center' },
+  modalAnnuller: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 0.5, borderColor: TEMA.border, alignItems: 'center' },
+  modalAnnullerTekst: { fontSize: 13, color: TEMA.tekstSekundær },
+  modalGem: { flex: 1, padding: 10, borderRadius: 12, backgroundColor: TEMA.tekstPrimær, alignItems: 'center' },
   modalGemTekst: { fontSize: 13, color: 'white', fontWeight: '500' },
   bleKnapper: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  bleKnap: { flex: 1, padding: 10, borderRadius: 10, borderWidth: 0.5, borderColor: '#E0E0E0', backgroundColor: '#F5F5F5', alignItems: 'center' },
-  bleKnapAktiv: { backgroundColor: '#EEEDFE', borderColor: '#AFA9EC' },
-  bleKnapTekst: { fontSize: 12 },
+  bleKnap: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 0.5, borderColor: TEMA.border, backgroundColor: TEMA.baggrund, alignItems: 'center' },
+  bleKnapAktiv: { backgroundColor: TEMA.aktiv, borderColor: TEMA.aktivBorder },
+  bleKnapTekst: { fontSize: 12, color: TEMA.tekstPrimær },
 });
