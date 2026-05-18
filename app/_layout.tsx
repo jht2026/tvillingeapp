@@ -21,6 +21,7 @@ export default function RootLayout() {
         <Tabs.Screen name="index" options={{ title: 'Log' }} />
         <Tabs.Screen name="idag" options={{ title: 'I dag' }} />
         <Tabs.Screen name="oversigt" options={{ title: 'Oversigt' }} />
+        <Tabs.Screen name="sync" options={{ title: 'Sync' }} />
         <Tabs.Screen name="indstillinger" options={{ title: '⚙️' }} />
         <Tabs.Screen name="store" options={{ href: null }} />
         <Tabs.Screen name="context" options={{ href: null }} />
