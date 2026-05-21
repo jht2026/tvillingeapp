@@ -13,6 +13,7 @@ export type LogItem = {
 export type BarnData = {
   log: LogItem[];
   amningStart: Date | null;
+  amningBryst: 'højre' | 'venstre' | null;
   lurStart: Date | null;
 };
 
@@ -24,8 +25,8 @@ export type AppData = {
 
 export const initialData: AppData = {
   børn: {
-    a: { log: [], amningStart: null, lurStart: null },
-    b: { log: [], amningStart: null, lurStart: null },
+    a: { log: [], amningStart: null, amningBryst: null, lurStart: null },
+    b: { log: [], amningStart: null, amningBryst: null, lurStart: null },
   },
   navne: { a: 'Barn A', b: 'Barn B' },
   farver: { a: '#2C1810', b: '#7B9EB8' },

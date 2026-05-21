@@ -37,6 +37,9 @@ export default function Index() {
   const [visBleModal, setVisBleModal] = useState(false);
   const [mlInput, setMlInput] = useState('');
   const [valgtBle, setValgtBle] = useState<'vaad' | 'beskidt' | 'begge' | null>(null);
+  const [visAmningModal, setVisAmningModal] = useState(false);
+  const [valgtBryst, setValgtBryst] = useState<'højre' | 'venstre' | null>(null);
+  const [dDråbeGivet, setDDråbeGivet] = useState<{ a: boolean; b: boolean }>({ a: false, b: false });
 
   useEffect(() => {
     const interval = setInterval(() => setTik(t => t + 1), 1000);
@@ -61,8 +64,17 @@ export default function Index() {
   }
 
   function toggleAmning() {
-    if (!data.børn[aktivtBarn].amningStart) startAmning(aktivtBarn);
-    else stopAmning(aktivtBarn);
+    if (!data.børn[aktivtBarn].amningStart) {
+      setVisAmningModal(true);
+    } else {
+      stopAmning(aktivtBarn);
+    }
+  }
+
+  function startAmningMedBryst(bryst: 'højre' | 'venstre') {
+    setValgtBryst(bryst);
+    setVisAmningModal(false);
+    startAmning(aktivtBarn, bryst);
   }
 
   function toggleLur() {
@@ -110,17 +122,42 @@ export default function Index() {
           onPress={() => setAktivtBarn('a')}
         >
           <Text style={[styles.barnKnapNavn, { color: aktivtBarn === 'a' ? 'white' : TEMA.tekstPrimær }]}>{navne.a}</Text>
-          <Text style={[styles.barnKnapTid, { color: aktivtBarn === 'a' ? 'rgba(255,255,255,0.6)' : TEMA.tekstSekundær }]}>{sidstMadA ? 'Ammet ' + sidstMadA.tid : 'Intet logget'}</Text>
+          <Text style={styles.barnKnapTid}>
+  {sidstMadA 
+    ? sidstMadA.type === 'amning' 
+      ? 'Ammet ' + sidstMadA.tid + (sidstMadA.tekst.includes('venstre') ? ' · V' : sidstMadA.tekst.includes('højre') ? ' · H' : '')
+      : 'Flaske ' + sidstMadA.tid
+    : 'Intet logget'}
+</Text>
           </TouchableOpacity>
         <TouchableOpacity
          style={[styles.barnKnap, aktivtBarn === 'b' && { backgroundColor: farveBagB, borderColor: farveBagB }]}
          onPress={() => setAktivtBarn('b')}
         >
           <Text style={[styles.barnKnapNavn, { color: aktivtBarn === 'b' ? '#2C1810' : TEMA.tekstPrimær }]}>{navne.b}</Text>
-          <Text style={[styles.barnKnapTid, { color: aktivtBarn === 'b' ? 'rgba(44,24,16,0.5)' : TEMA.tekstSekundær }]}>{sidstMadB ? 'Ammet ' + sidstMadB.tid : 'Intet logget'}</Text>
+          <Text style={styles.barnKnapTid}>
+  {sidstMadB 
+    ? sidstMadB.type === 'amning' 
+      ? 'Ammet ' + sidstMadB.tid + (sidstMadB.tekst.includes('venstre') ? ' · V' : sidstMadB.tekst.includes('højre') ? ' · H' : '')
+      : 'Flaske ' + sidstMadB.tid
+    : 'Intet logget'}
+</Text>
           </TouchableOpacity>
       </View>
-
+<View style={styles.dDråbeWrap}>
+  <TouchableOpacity 
+    style={styles.dDråbeRad} 
+    onPress={() => setDDråbeGivet(prev => ({ ...prev, [aktivtBarn]: !prev[aktivtBarn] }))}
+  >
+    <View style={[styles.dDråbeCheckbox, dDråbeGivet[aktivtBarn] && styles.dDråbeCheckboxAktiv]}>
+      {dDråbeGivet[aktivtBarn] && <Text style={styles.dDråbeTjek}>✓</Text>}
+    </View>
+    <View style={styles.dDråbeTekstWrap}>
+      <Text style={styles.dDråbeTitel}>D-dråber — {navne[aktivtBarn]}</Text>
+      <Text style={styles.dDråbeSub}>{dDråbeGivet[aktivtBarn] ? 'Givet i dag ✓' : 'Ikke givet endnu'}</Text>
+    </View>
+  </TouchableOpacity>
+</View>
       <Text style={styles.sektionLabel}>Registrer</Text>
       <View style={styles.aktionRække}>
         <TouchableOpacity
@@ -163,6 +200,35 @@ export default function Index() {
           ))
         )}
       </View>
+
+{/* AMNING MODAL */}
+      <Modal visible={visAmningModal} transparent animationType="fade">
+        <View style={styles.modalBag}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitel}>Amning — {navne[aktivtBarn]}</Text>
+            <Text style={[styles.modalTitel, { fontSize: 13, fontWeight: '400', color: TEMA.tekstSekundær, marginBottom: 16 }]}>Hvilket bryst?</Text>
+            <View style={styles.bleKnapper}>
+              <TouchableOpacity
+                style={[styles.bleKnap, valgtBryst === 'venstre' && styles.bleKnapAktiv]}
+                onPress={() => startAmningMedBryst('venstre')}
+              >
+                <Text style={styles.bleKnapTekst}>◀ Venstre</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bleKnap, valgtBryst === 'højre' && styles.bleKnapAktiv]}
+                onPress={() => startAmningMedBryst('højre')}
+              >
+                <Text style={styles.bleKnapTekst}>Højre ▶</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalKnapper}>
+              <TouchableOpacity style={styles.modalAnnuller} onPress={() => setVisAmningModal(false)}>
+                <Text style={styles.modalAnnullerTekst}>Annuller</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* FLASKE MODAL */}
       <Modal visible={visFlaskeModal} transparent animationType="fade">
@@ -256,4 +322,12 @@ const styles = StyleSheet.create({
   bleKnap: { flex: 1, padding: 10, borderRadius: 12, borderWidth: 0.5, borderColor: TEMA.border, backgroundColor: TEMA.baggrund, alignItems: 'center' },
   bleKnapAktiv: { backgroundColor: TEMA.aktiv, borderColor: TEMA.aktivBorder },
   bleKnapTekst: { fontSize: 12, color: TEMA.tekstPrimær },
+  dDråbeWrap: { marginHorizontal: 16, marginBottom: 30 },
+  dDråbeRad: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: TEMA.kort, borderRadius: 14, padding: 14, borderWidth: 0.5, borderColor: TEMA.border },
+  dDråbeCheckbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, borderColor: TEMA.border, alignItems: 'center', justifyContent: 'center' },
+  dDråbeCheckboxAktiv: { backgroundColor: '#6B8F71', borderColor: '#6B8F71' },
+  dDråbeTjek: { color: 'white', fontSize: 14, fontWeight: '600' },
+  dDråbeTekstWrap: { flex: 1 },
+  dDråbeTitel: { fontSize: 13, fontWeight: '500', color: TEMA.tekstPrimær },
+  dDråbeSub: { fontSize: 11, color: TEMA.tekstSekundær, marginTop: 2 },
 });

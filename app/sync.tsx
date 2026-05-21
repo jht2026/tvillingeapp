@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { useApp } from "./context";
 import { TEMA } from "./store";
 
-const GEMINI_API_KEY = "AIzaSyDnMJHPLddY4PdTbMYskt9KkjjjfzJBg9o";
+const GEMINI_API_KEY = "AIzaSyA5Rp5wythuu6yJqIv4EiJ0f8cvge7MFH4";
 
 export default function Sync() {
   const { data } = useApp();

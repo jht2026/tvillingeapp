@@ -8,7 +8,7 @@ type AppContextType = {
   aktivtBarn: 'a' | 'b';
   setAktivtBarn: (barn: 'a' | 'b') => void;
   tilføjLog: (barn: 'a' | 'b', item: Omit<LogItem, 'id' | 'barn'>) => void;
-  startAmning: (barn: 'a' | 'b') => void;
+  startAmning: (barn: 'a' | 'b', bryst?: 'højre' | 'venstre') => void;
   stopAmning: (barn: 'a' | 'b') => void;
   startLur: (barn: 'a' | 'b') => void;
   stopLur: (barn: 'a' | 'b') => void;
@@ -71,16 +71,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     opdaterOgGem(nyData);
   }
 
-  function startAmning(barn: 'a' | 'b') {
-    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], amningStart: new Date() } } });
+ function startAmning(barn: 'a' | 'b', bryst?: 'højre' | 'venstre') {
+    setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], amningStart: new Date(), amningBryst: bryst || null } } }));
   }
 
   function stopAmning(barn: 'a' | 'b') {
     const start = data.børn[barn].amningStart;
     if (!start) return;
+    console.log('amningBryst:', data.børn[barn].amningBryst);
     const dur = Math.floor((Date.now() - start.getTime()) / 1000);
     const m = Math.floor(dur / 60), s = dur % 60;
-    const tekst = m >= 60 ? `Amning — ${Math.floor(m/60)}t ${m%60}m` : m > 0 ? `Amning — ${m}m ${s}s` : `Amning — ${s}s`;
+    const bryst = data.børn[barn].amningBryst;
+    const brystTekst = bryst ? ` (${bryst})` : '';
+    const tekst = m >= 60 ? `Amning — ${Math.floor(m/60)}t ${m%60}m${brystTekst}` : m > 0 ? `Amning — ${m}m ${s}s${brystTekst}` : `Amning — ${s}s${brystTekst}`;
     const nyData = { ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], amningStart: null } } };
     setData(nyData);
     const medLog = {
