@@ -1,7 +1,7 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { db } from './firebase';
-import { AppData, LogItem, initialData } from './store';
+import { AppData, LogItem, SundhedsbesøgItem, initialData } from './store';
 
 type AppContextType = {
   data: AppData;
@@ -15,6 +15,10 @@ type AppContextType = {
   ændreNavn: (barn: 'a' | 'b', navn: string) => void;
   ændreFarve: (barn: 'a' | 'b', farve: string) => void;
   sletLogItem: (barn: 'a' | 'b', id: string) => void;
+  gemFødselsinfo: (infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }, infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }) => void;
+  gemAlt: (navnA: string, navnB: string, infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }, infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }) => void;
+  tilføjSundhedsbesøg: (barn: 'a' | 'b', besøg: Omit<SundhedsbesøgItem, 'id'>) => void;
+  sletSundhedsbesøg: (barn: 'a' | 'b', id: string) => void;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -23,9 +27,7 @@ const DOC_ID = 'familie';
 export function AppProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(initialData);
   const [aktivtBarn, setAktivtBarn] = useState<'a' | 'b'>('a');
-  const [klar, setKlar] = useState(false);
 
-  // Lyt til ændringer i Firestore i realtid
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'familie', DOC_ID), (snap) => {
       if (snap.exists()) {
@@ -36,14 +38,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (d.børn.b.amningStart) d.børn.b.amningStart = new Date(d.børn.b.amningStart);
         if (d.børn.a.lurStart) d.børn.a.lurStart = new Date(d.børn.a.lurStart);
         if (d.børn.b.lurStart) d.børn.b.lurStart = new Date(d.børn.b.lurStart);
+        if (!d.børn.a.sundhedsbesøg) d.børn.a.sundhedsbesøg = [];
+        if (!d.børn.b.sundhedsbesøg) d.børn.b.sundhedsbesøg = [];
         setData(d);
       }
-      setKlar(true);
     });
     return () => unsub();
   }, []);
 
-  // Gem data til Firestore
   async function gemData(nyData: AppData) {
     try {
       await setDoc(doc(db, 'familie', DOC_ID), JSON.parse(JSON.stringify(nyData)));
@@ -64,22 +66,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...data.børn,
         [barn]: {
           ...data.børn[barn],
-          log: [{ ...item, id: Date.now().toString(), barn }, ...data.børn[barn].log],
+          log: [{ ...item, id: Date.now().toString(), barn, tidspunkt: item.tidspunkt ?? new Date().toISOString() }, ...data.børn[barn].log],
         }
       }
     };
     opdaterOgGem(nyData);
   }
 
- function startAmning(barn: 'a' | 'b', bryst?: 'højre' | 'venstre') {
+  function startAmning(barn: 'a' | 'b', bryst?: 'højre' | 'venstre') {
     setData(prev => ({ ...prev, børn: { ...prev.børn, [barn]: { ...prev.børn[barn], amningStart: new Date(), amningBryst: bryst || null } } }));
   }
 
   function stopAmning(barn: 'a' | 'b') {
     const start = data.børn[barn].amningStart;
     if (!start) return;
-    console.log('amningBryst:', data.børn[barn].amningBryst);
-    const dur = Math.floor((Date.now() - start.getTime()) / 1000);
+    const nu = new Date();
+    const dur = Math.floor((nu.getTime() - start.getTime()) / 1000);
     const m = Math.floor(dur / 60), s = dur % 60;
     const bryst = data.børn[barn].amningBryst;
     const brystTekst = bryst ? ` (${bryst})` : '';
@@ -92,7 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...nyData.børn,
         [barn]: {
           ...nyData.børn[barn],
-          log: [{ type: 'amning' as const, tekst, tid: nowStr(), id: Date.now().toString(), barn }, ...nyData.børn[barn].log],
+          log: [{ type: 'amning' as const, tekst, tid: nowStr(), tidspunkt: nu.toISOString(), bryst: bryst ?? undefined, id: Date.now().toString(), barn }, ...nyData.børn[barn].log],
         }
       }
     };
@@ -117,25 +119,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...nyData.børn,
         [barn]: {
           ...nyData.børn[barn],
-          log: [{ type: 'lur' as const, tekst, tid: nowStr(), id: Date.now().toString(), barn, lurStart: start.getTime(), lurSlut: slut.getTime() }, ...nyData.børn[barn].log],
+          log: [{ type: 'lur' as const, tekst, tid: nowStr(), tidspunkt: start.toISOString(), id: Date.now().toString(), barn, lurStart: start.getTime(), lurSlut: slut.getTime() }, ...nyData.børn[barn].log],
         }
       }
     };
     opdaterOgGem(medLog);
   }
+
   function sletLogItem(barn: 'a' | 'b', id: string) {
-  const nyData = {
-    ...data,
-    børn: {
-      ...data.børn,
-      [barn]: {
-        ...data.børn[barn],
-        log: data.børn[barn].log.filter(item => item.id !== id),
-      }
-    }
-  };
-  opdaterOgGem(nyData);
-}
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], log: data.børn[barn].log.filter(i => i.id !== id) } } });
+  }
 
   function ændreNavn(barn: 'a' | 'b', navn: string) {
     opdaterOgGem({ ...data, navne: { ...data.navne, [barn]: navn } });
@@ -145,16 +138,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
     opdaterOgGem({ ...data, farver: { ...data.farver, [barn]: farve } });
   }
 
+  function gemFødselsinfo(
+    infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number },
+    infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }
+  ) {
+    opdaterOgGem({
+      ...data,
+      børn: {
+        ...data.børn,
+        a: { ...data.børn.a, ...infoA },
+        b: { ...data.børn.b, ...infoB },
+      }
+    });
+  }
+
+  function gemAlt(
+    navnA: string, navnB: string,
+    infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number },
+    infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }
+  ) {
+    opdaterOgGem({
+      ...data,
+      navne: { a: navnA, b: navnB },
+      børn: {
+        ...data.børn,
+        a: { ...data.børn.a, ...infoA },
+        b: { ...data.børn.b, ...infoB },
+      }
+    });
+  }
+
+  function tilføjSundhedsbesøg(barn: 'a' | 'b', besøg: Omit<SundhedsbesøgItem, 'id'>) {
+    const nyt: SundhedsbesøgItem = { ...besøg, id: Date.now().toString() };
+    const eksisterende = data.børn[barn].sundhedsbesøg ?? [];
+    const sorteret = [...eksisterende, nyt].sort((a, b) => new Date(a.dato).getTime() - new Date(b.dato).getTime());
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedsbesøg: sorteret } } });
+  }
+
+  function sletSundhedsbesøg(barn: 'a' | 'b', id: string) {
+    const filtreret = (data.børn[barn].sundhedsbesøg ?? []).filter(b => b.id !== id);
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedsbesøg: filtreret } } });
+  }
+
   function nowStr() {
     const d = new Date();
     return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
   }
 
   return (
-     <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve, sletLogItem }}>
+    <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve, sletLogItem, gemFødselsinfo, gemAlt, tilføjSundhedsbesøg, sletSundhedsbesøg }}>
       {children}
     </AppContext.Provider>
-  )
+  );
 }
 
 export function useApp() {

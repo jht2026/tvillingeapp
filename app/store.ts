@@ -3,8 +3,10 @@ export type LogItem = {
   type: 'amning' | 'flaske' | 'lur' | 'ble';
   tekst: string;
   tid: string;
+  tidspunkt?: string;       // ISO-streng, fx new Date().toISOString()
   barn: 'a' | 'b';
   værdi?: number;
+  bryst?: 'venstre' | 'højre';
   bleType?: 'vaad' | 'beskidt' | 'begge';
   lurStart?: number;
   lurSlut?: number;
