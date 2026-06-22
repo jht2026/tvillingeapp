@@ -7,8 +7,8 @@ export default function RootLayout() {
       <Tabs screenOptions={{
         tabBarActiveTintColor: '#2C1810',
         tabBarInactiveTintColor: '#B5A090',
-        tabBarStyle: { 
-          backgroundColor: '#FDF8F3', 
+        tabBarStyle: {
+          backgroundColor: '#FDF8F3',
           borderTopColor: '#EDE5DC',
           borderTopWidth: 0.5,
         },
@@ -21,8 +21,9 @@ export default function RootLayout() {
         <Tabs.Screen name="index" options={{ title: 'Log' }} />
         <Tabs.Screen name="idag" options={{ title: 'I dag' }} />
         <Tabs.Screen name="oversigt" options={{ title: 'Oversigt' }} />
+        <Tabs.Screen name="sundhed" options={{ title: 'Sundhed' }} />
         <Tabs.Screen name="sync" options={{ title: 'Sync' }} />
-        <Tabs.Screen name="indstillinger" options={{ title: '⚙️' }} />
+        <Tabs.Screen name="instillinger" options={{ title: 'Indstillinger' }} />
         <Tabs.Screen name="store" options={{ href: null }} />
         <Tabs.Screen name="context" options={{ href: null }} />
         <Tabs.Screen name="firebase" options={{ href: null }} />

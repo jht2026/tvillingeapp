@@ -1,7 +1,7 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { db } from './firebase';
-import { AppData, LogItem, SundhedsbesøgItem, initialData } from './store';
+import { AppData, LogItem, Medicin, SundhedsItem, initialData } from './store';
 
 type AppContextType = {
   data: AppData;
@@ -15,10 +15,14 @@ type AppContextType = {
   ændreNavn: (barn: 'a' | 'b', navn: string) => void;
   ændreFarve: (barn: 'a' | 'b', farve: string) => void;
   sletLogItem: (barn: 'a' | 'b', id: string) => void;
+  redigerLogItem: (barn: 'a' | 'b', id: string, opdateret: Partial<import('./store').LogItem>) => void;
   gemFødselsinfo: (infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }, infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }) => void;
   gemAlt: (navnA: string, navnB: string, infoA: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }, infoB: { fødselsdag?: string; fødselsvægt?: number; fødselslængde?: number }) => void;
-  tilføjSundhedsbesøg: (barn: 'a' | 'b', besøg: Omit<SundhedsbesøgItem, 'id'>) => void;
-  sletSundhedsbesøg: (barn: 'a' | 'b', id: string) => void;
+  tilføjSundhedslog: (barn: 'a' | 'b', item: Omit<SundhedsItem, 'id'>) => void;
+  sletSundhedslog: (barn: 'a' | 'b', id: string) => void;
+  redigerSundhedslog: (barn: 'a' | 'b', id: string, opdateret: Partial<SundhedsItem>) => void;
+  tilføjMedicin: (m: Omit<Medicin, 'id'>) => void;
+  sletMedicin: (id: string) => void;
 };
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -38,8 +42,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (d.børn.b.amningStart) d.børn.b.amningStart = new Date(d.børn.b.amningStart);
         if (d.børn.a.lurStart) d.børn.a.lurStart = new Date(d.børn.a.lurStart);
         if (d.børn.b.lurStart) d.børn.b.lurStart = new Date(d.børn.b.lurStart);
-        if (!d.børn.a.sundhedsbesøg) d.børn.a.sundhedsbesøg = [];
-        if (!d.børn.b.sundhedsbesøg) d.børn.b.sundhedsbesøg = [];
+        if (!d.børn.a.sundhedslog) d.børn.a.sundhedslog = [];
+        if (!d.børn.b.sundhedslog) d.børn.b.sundhedslog = [];
+        if (!d.medicin) d.medicin = [];
         setData(d);
       }
     });
@@ -126,6 +131,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     opdaterOgGem(medLog);
   }
 
+  function redigerLogItem(barn: 'a' | 'b', id: string, opdateret: Partial<import('./store').LogItem>) {
+    const gammelBarn = data.børn[barn].log.find(i => i.id === id);
+    if (!gammelBarn) return;
+    const nytBarn = opdateret.barn ?? barn;
+    if (nytBarn !== barn) {
+      // Flyt til andet barn
+      const fjernet = { ...data.børn, [barn]: { ...data.børn[barn], log: data.børn[barn].log.filter(i => i.id !== id) } };
+      const tilføjet = { ...fjernet, [nytBarn]: { ...fjernet[nytBarn], log: [{ ...gammelBarn, ...opdateret, barn: nytBarn }, ...fjernet[nytBarn].log] } };
+      opdaterOgGem({ ...data, børn: tilføjet });
+    } else {
+      const nyLog = data.børn[barn].log.map(i => i.id === id ? { ...i, ...opdateret } : i);
+      opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], log: nyLog } } });
+    }
+  }
+
   function sletLogItem(barn: 'a' | 'b', id: string) {
     opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], log: data.børn[barn].log.filter(i => i.id !== id) } } });
   }
@@ -168,16 +188,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  function tilføjSundhedsbesøg(barn: 'a' | 'b', besøg: Omit<SundhedsbesøgItem, 'id'>) {
-    const nyt: SundhedsbesøgItem = { ...besøg, id: Date.now().toString() };
-    const eksisterende = data.børn[barn].sundhedsbesøg ?? [];
-    const sorteret = [...eksisterende, nyt].sort((a, b) => new Date(a.dato).getTime() - new Date(b.dato).getTime());
-    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedsbesøg: sorteret } } });
+  function tilføjSundhedslog(barn: 'a' | 'b', item: Omit<SundhedsItem, 'id'>) {
+    const nyt: SundhedsItem = { ...item, id: Date.now().toString() };
+    const eksisterende = data.børn[barn].sundhedslog ?? [];
+    const sorteret = [...eksisterende, nyt].sort((a, b) => (a.dato + a.tidspunkt).localeCompare(b.dato + b.tidspunkt));
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedslog: sorteret } } });
   }
 
-  function sletSundhedsbesøg(barn: 'a' | 'b', id: string) {
-    const filtreret = (data.børn[barn].sundhedsbesøg ?? []).filter(b => b.id !== id);
-    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedsbesøg: filtreret } } });
+  function redigerSundhedslog(barn: 'a' | 'b', id: string, opdateret: Partial<SundhedsItem>) {
+    const nyLog = (data.børn[barn].sundhedslog ?? []).map(i => i.id === id ? { ...i, ...opdateret } : i);
+    const sorteret = nyLog.sort((a, b) => (a.dato + a.tidspunkt).localeCompare(b.dato + b.tidspunkt));
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedslog: sorteret } } });
+  }
+
+  function sletSundhedslog(barn: 'a' | 'b', id: string) {
+    const filtreret = (data.børn[barn].sundhedslog ?? []).filter(i => i.id !== id);
+    opdaterOgGem({ ...data, børn: { ...data.børn, [barn]: { ...data.børn[barn], sundhedslog: filtreret } } });
+  }
+
+  function tilføjMedicin(m: Omit<Medicin, 'id'>) {
+    const nyt: Medicin = { ...m, id: Date.now().toString() };
+    const eksisterende = data.medicin ?? [];
+    opdaterOgGem({ ...data, medicin: [...eksisterende, nyt] });
+  }
+
+  function sletMedicin(id: string) {
+    opdaterOgGem({ ...data, medicin: (data.medicin ?? []).filter(m => m.id !== id) });
   }
 
   function nowStr() {
@@ -186,7 +222,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve, sletLogItem, gemFødselsinfo, gemAlt, tilføjSundhedsbesøg, sletSundhedsbesøg }}>
+    <AppContext.Provider value={{ data, aktivtBarn, setAktivtBarn, tilføjLog, startAmning, stopAmning, startLur, stopLur, ændreNavn, ændreFarve, sletLogItem, redigerLogItem, gemFødselsinfo, gemAlt, tilføjSundhedslog, sletSundhedslog, redigerSundhedslog, tilføjMedicin, sletMedicin }}>
       {children}
     </AppContext.Provider>
   );

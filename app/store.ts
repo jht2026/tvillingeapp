@@ -3,7 +3,7 @@ export type LogItem = {
   type: 'amning' | 'flaske' | 'lur' | 'ble';
   tekst: string;
   tid: string;
-  tidspunkt?: string;       // ISO-streng, fx new Date().toISOString()
+  tidspunkt?: string;
   barn: 'a' | 'b';
   værdi?: number;
   bryst?: 'venstre' | 'højre';
@@ -12,26 +12,48 @@ export type LogItem = {
   lurSlut?: number;
 };
 
+export type SundhedsItem = {
+  id: string;
+  dato: string;
+  tidspunkt: string;
+  vægt?: number;
+  længde?: number;
+  temperatur?: number;
+};
+
+export type Medicin = {
+  id: string;
+  navn: string;
+  gangeOmDagen: number;
+  børn: ('a' | 'b')[]; // hvilke børn skal have det
+};
+
 export type BarnData = {
   log: LogItem[];
   amningStart: Date | null;
   amningBryst: 'højre' | 'venstre' | null;
   lurStart: Date | null;
+  fødselsdag?: string;
+  fødselsvægt?: number;
+  fødselslængde?: number;
+  sundhedslog?: SundhedsItem[];
 };
 
 export type AppData = {
   børn: { a: BarnData; b: BarnData };
   navne: { a: string; b: string };
   farver: { a: string; b: string };
+  medicin?: Medicin[];
 };
 
 export const initialData: AppData = {
   børn: {
-    a: { log: [], amningStart: null, amningBryst: null, lurStart: null },
-    b: { log: [], amningStart: null, amningBryst: null, lurStart: null },
+    a: { log: [], amningStart: null, amningBryst: null, lurStart: null, sundhedslog: [] },
+    b: { log: [], amningStart: null, amningBryst: null, lurStart: null, sundhedslog: [] },
   },
   navne: { a: 'Barn A', b: 'Barn B' },
   farver: { a: '#2C1810', b: '#7B9EB8' },
+  medicin: [],
 };
 
 export const FARVER = [
