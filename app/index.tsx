@@ -149,7 +149,8 @@ function LogItemKort({ item, farve, onSlet, onRediger, swiped, setSwiped }: {
       )}
       <TouchableOpacity
         style={[styles.logItem, { transform: [{ translateX: swiped ? -120 : 0 }] }]}
-        onLongPress={() => setSwiped(!swiped)}
+        onPress={() => { if (swiped) setSwiped(false); }}
+        onLongPress={() => setSwiped(true)}
         activeOpacity={0.9}
       >
         <View style={[styles.logDot, { backgroundColor: farve }]} />
