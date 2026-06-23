@@ -131,10 +131,9 @@ function RedigerModal({ item, onLuk, onGem }: {
 
 // ─── Log item med swipe ────────────────────────────────────────────────────────
 
-function LogItemKort({ item, farve, onSlet, onRediger }: {
-  item: LogItem; farve: string; onSlet: () => void; onRediger: () => void;
+function LogItemKort({ item, farve, onSlet, onRediger, swiped, setSwiped }: {
+  item: LogItem; farve: string; onSlet: () => void; onRediger: () => void; swiped: boolean; setSwiped: (v: boolean) => void;
 }) {
-  const [swiped, setSwiped] = useState(false);
 
   return (
     <View style={{ marginBottom: 6 }}>
@@ -178,6 +177,7 @@ export default function Index() {
   const [dDråbeGivet, setDDråbeGivet] = useState<{ a: boolean; b: boolean }>({ a: false, b: false });
   const [medicinGivet, setMedicinGivet] = useState<Record<string, boolean[]>>({});
   const [redigerItem, setRedigerItem] = useState<LogItem | null>(null);
+  const [aktivSwipe, setAktivSwipe] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setTik(t => t + 1), 1000);
@@ -358,7 +358,7 @@ export default function Index() {
       </View>
 
       <Text style={styles.sektionLabel}>Seneste aktivitet — {navne[aktivtBarn]}</Text>
-      <View style={styles.logWrap}>
+      <View style={styles.logWrap} onStartShouldSetResponder={() => { setAktivSwipe(null); return false; }}>
         {barn.log.length === 0 ? (
           <Text style={styles.logTom}>Ingen aktiviteter endnu</Text>
         ) : (
@@ -369,6 +369,8 @@ export default function Index() {
               farve={item.type === 'amning' ? farver[item.barn] : item.type === 'lur' ? '#9B8BB0' : item.type === 'flaske' ? '#7B9EB8' : '#C4848A'}
               onSlet={() => sletLogItem(aktivtBarn, item.id)}
               onRediger={() => setRedigerItem(item)}
+              swiped={aktivSwipe === item.id}
+              setSwiped={(v) => setAktivSwipe(v ? item.id : null)}
             />
           ))
         )}
