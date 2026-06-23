@@ -18,6 +18,13 @@ function RedigerModal({ item, onLuk, onGem }: {
   const [bryst, setBryst] = useState<'venstre' | 'højre' | undefined>(item.bryst);
   const [bleType, setBleType] = useState<'vaad' | 'beskidt' | 'begge' | undefined>(item.bleType);
 
+  // Parse eksisterende varighed fra tekst fx "Amning — 5m 30s (venstre)" -> "5m 30s"
+  function parseVarighed(tekst: string): string {
+    const m = tekst.match(/Amning — (.+?)(?:\s*\(|$)/);
+    return m ? m[1].trim() : '';
+  }
+  const [varighed, setVarighed] = useState(item.type === 'amning' ? parseVarighed(item.tekst) : '');
+
   function gem() {
     const opdateret: Partial<LogItem> = { tid, barn };
     if (item.type === 'flaske') {
@@ -27,11 +34,14 @@ function RedigerModal({ item, onLuk, onGem }: {
         opdateret.tekst = 'Flaske — ' + mlNum + ' ml';
       }
     }
-    if (item.type === 'amning' && bryst) {
+    if (item.type === 'amning') {
       opdateret.bryst = bryst;
-      const varighedMatch = item.tekst.match(/Amning — (.+?) \(/);
-      const varighed = varighedMatch ? varighedMatch[1] : '';
-      opdateret.tekst = varighed ? 'Amning — ' + varighed + ' (' + bryst + ')' : item.tekst;
+      const v = varighed.trim() || parseVarighed(item.tekst);
+      if (bryst) {
+        opdateret.tekst = 'Amning — ' + v + ' (' + bryst + ')';
+      } else {
+        opdateret.tekst = 'Amning — ' + v;
+      }
     }
     if (item.type === 'ble' && bleType) {
       const labels = { vaad: '💧 Våd', beskidt: '💩 Beskidt', begge: 'Våd + beskidt' };
@@ -70,9 +80,11 @@ function RedigerModal({ item, onLuk, onGem }: {
             </>
           )}
 
-          {/* Amning bryst */}
+          {/* Amning varighed og bryst */}
           {item.type === 'amning' && (
             <>
+              <Text style={[styles.inputLbl, { marginTop: 8 }]}>Varighed (fx 5m 30s)</Text>
+              <TextInput style={styles.input} value={varighed} onChangeText={setVarighed} placeholder="fx 10m 0s" placeholderTextColor={TEMA.tekstSekundær} maxLength={15} />
               <Text style={[styles.inputLbl, { marginTop: 8 }]}>Bryst</Text>
               <View style={styles.bleKnapper}>
                 <TouchableOpacity style={[styles.bleKnap, bryst === 'venstre' && styles.bleKnapAktiv]} onPress={() => setBryst('venstre')}>
